@@ -67,7 +67,10 @@ def parse_map(input):
 
     # matches:
     #   0x100000EA0	0x000015B7	[  1] __ZN5cl....N4llvm9StringRefE
-    sym_re = re.compile(r'^(0x[0-9A-F]+)\t(0x[0-9A-F]+)\t\[\s*(\d+)\] (.+)$')
+    sym_re = re.compile(r'^(0x[0-9A-F]+)\s+(0x[0-9A-F]+)\s+\[\s*(\d+)\] (.+)$')
+
+    # matches beginning of a symbol.
+    sym_begin_re = re.compile(r'^(0x[0-9A-F]+)')
 
     for line in input:
         line = line.rstrip()
@@ -104,6 +107,12 @@ def parse_map(input):
             file_index = int(file_index)
             path = objfiles[file_index]
             yield sym, 't', size, path
+            continue
+          # Literal strings can span multiple lines, and there is no
+          # defined end character. So unless it looks like the start
+          # of a new symbol, we _must_ skip parsing.
+          match = sym_begin_re.match(line)
+          if not match:
             continue
 
         print >>sys.stderr, 'unparsed:', repr(line)
